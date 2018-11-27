@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>z 1</title>
+	<style>
+		body { margin: 0; padding: 0; font-size: 0; }
+		canvas { width: 100%; height: 100%; }
+	</style>
+</head>
+<body>
+<script src="js/three.min.js"></script>
+<script>
+	var WIDTH = window.innerWidth;
+	var HEIGHT = window.innerHeight;
+
+document.addEventListener('keydown',onDocumentKeyDown,false);
+document.addEventListener('keyup',onDocumentKeyUp,false);
+var ROTATOR_X = 0;
+var ROTATOR_Z = 0;
+var STEP = 0.1;
+var SPEED_X = 0;
+var SPEED_Z = 0;
+var MAX_SPEED = 1;
+
+function speedUp(speed) {
+	return speed < MAX_SPEED ? speed + STEP : speed;
+}
+
+function speedDown(speed) {
+	return speed > -MAX_SPEED ? speed - STEP : speed;
+}
+
+function rotateY(rotator_x){
+	if (rotator_x > 0) return 0.05;
+	else if (rotator_x < 0) return -0.05;
+	return 0;
+}
+
+function calculateSpeed(speed, rotator){
+	if(rotator == 1){
+		speed = speedUp(speed);
+	}
+	else if(rotator == -1){
+		speed = speedDown(speed);
+	}
+	else {
+		speed -= 0.05 * speed;
+		if(Math.abs(speed) < 0.1) speed = 0;
+	}
+	return speed;
+}
+
+function onDocumentKeyDown(event){
+	event = event || window.event;
+	var keycode = event.keyCode;
+	switch(keycode){
+		case 37:
+			console.log("left down");
+			ROTATOR_X = -1;
+			break;
+		case 38:
+			console.log("up down");
+			ROTATOR_Z = -1
+			break;
+		case 39:
+			console.log("right down");
+			ROTATOR_X = 1;
+			break;
+		case 40:
+			console.log("down down" );
+			ROTATOR_Z = 1
+			break;
+		}
+	}
+	function onDocumentKeyUp(event){
+		event = event || window.event;
+		var keycode = event.keyCode;
+		switch(keycode){
+			case 37:
+				console.log("left up");
+				ROTATOR_X = 0;
+				break;
+			case 38:
+				console.log("up up");
+				ROTATOR_Z = 0
+				break;
+			case 39:
+				console.log("right up");
+				ROTATOR_X = 0;
+				break;
+			case 40:
+				console.log("down up" );
+				ROTATOR_Z = 0;
+				break;
+			}
+		}
+
+
+
+	var renderer = new THREE.WebGLRenderer({antialias:true});
+	renderer.setSize(WIDTH, HEIGHT);
+	renderer.setClearColor(0xDDDDDD, 1);
+	document.body.appendChild(renderer.domElement);
+
+	var scene = new THREE.Scene();
+
+	var camera = new THREE.PerspectiveCamera(50, WIDTH/HEIGHT, 0.1, 10000);
+	camera.position.z = 50;
+	scene.add(camera);
+
+	var boxGeometry = new THREE.BoxGeometry(10, 10, 10);
+	var phongMaterial = new THREE.MeshPhongMaterial({color: 0xFF0000});
+	var cube = new THREE.Mesh(boxGeometry, phongMaterial);
+	cube.position.x = -25;
+	cube.rotation.set(0.4, 0.2, 0);
+	scene.add(cube);
+
+	var light = new THREE.PointLight(0xFFFFFF);
+	light.position.set(-10, 15, 50);
+	scene.add(light);
+
+	var t = 0;
+	function render() {
+		t += 0.01;
+		requestAnimationFrame(render);
+		SPEED_X = calculateSpeed(SPEED_X, ROTATOR_X)
+		SPEED_Z = calculateSpeed(SPEED_Z, ROTATOR_Z)
+		cube.position.z += SPEED_Z;
+        cube.position.x += SPEED_X;
+		cube.rotation.y += rotateY(SPEED_X);
+		renderer.render(scene, camera);
+	}
+	render();
+</script>
+</body>
+</html>
