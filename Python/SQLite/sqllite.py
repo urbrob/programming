@@ -1,4 +1,4 @@
-def set_base():
+﻿def set_base():
     import sqlite3
 
     # Połączenie z bazą danych
@@ -6,7 +6,10 @@ def set_base():
 
     # Cursor który umożliwi nam tworzenie zapytań do baz danych
     c = conn.cursor()
-
+    # Odpalamy zapytanie które stworzy nam tabelę w bazie danych
+    # STWÓRZY TABLICĘ JEŚLI ONA NIE ISTNIEJE O NAZWIE patients O POLACH
+    # pesele JAKO TYP VARCHAR(11), first_name JAKO TYP VARCHAR(30)
+    # I tak dalej, varchar to jest string tak naprawdę
     c.execute("""CREATE TABLE IF NOT EXISTS patients (
               'pesel' 			VARCHAR(11) PRIMARY KEY,
               'first_name'    		VARCHAR(30),
