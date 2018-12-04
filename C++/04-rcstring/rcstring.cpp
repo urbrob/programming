@@ -9,10 +9,13 @@ int main() {
     cout << c << endl; // 10ala ma kota
     c = a + rcstring(" ") + b;
     cout << c << endl << endl << endl; //10 ala ma kota
-
+	a = b;
+	c = b;
     cout << "number = " << a.convertToInteger() << endl;
     b.convertToLowercase();
     cout << "lower = " << b << endl;
+    cout << a << endl;
+    cout << c << endl;
     x = b.generateSubstring(5);
     cout << "3 fun = " << x << endl;
 

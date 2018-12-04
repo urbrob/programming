@@ -20,7 +20,7 @@ public:
     rcstring& operator=(const rcstring&);
     rcstring& operator+=(const rcstring &);
     rcstring operator+(const rcstring &) const;
-    rcstring generateSubstring(int len);
+    rcstring generateSubstring(unsigned int len);
     void convertToLowercase();
     int convertToInteger();
     friend ostream& operator<<(ostream&, const rcstring&);
@@ -32,10 +32,11 @@ public:
 };
 
 struct rcstring::rctext {
-    char* s;
-    unsigned int size;
-    unsigned int n;
+    char* s; // Nasz tekst
+    unsigned int size; // Jego d³ugoœæ
+    unsigned int n; // Licznik referenci / to ile posiada tekstów
 
+	// Zwyk³y konstruktor tworz¹cy tekst 
     rctext(unsigned int nsize, const char* p) {
         n = 1;
         size = nsize;
@@ -45,9 +46,10 @@ struct rcstring::rctext {
     };
 
     ~rctext() {
-    delete [] s;
+    	delete [] s;
     }
 
+	// Odczepienie referencji do obiektu i zwrócenie go. Jeœli to pojedyncza referencja to tylko zwróæ.
     rctext* detach() {
         if(n == 1) {
             return this;
@@ -57,6 +59,7 @@ struct rcstring::rctext {
         return t;
     }
 
+	// Nadpisanie zawartoœci tekstu
     void assign(unsigned int nsize, const char *p) {
         if(size != nsize) {
             char* ns = new char[nsize+1];
@@ -75,14 +78,23 @@ private:
     rctext& operator= (const rctext&);
 };
 
+// Konstruktory 
+
 inline rcstring::rcstring() {
-    data = new rctext(0,"");
+    data = new rctext(0, "");
 }
 
 inline rcstring::rcstring(const rcstring& x) {
     x.data->n++;
     data=x.data;
 }
+
+rcstring::rcstring(const char* s) {
+    data = new rctext(strlen(s), s);
+}
+
+
+// Destruktor
 inline rcstring::~rcstring() {
     if(--data->n == 0) {
         delete data;
@@ -90,22 +102,23 @@ inline rcstring::~rcstring() {
 }
 
 rcstring& rcstring::operator=(const rcstring & x) {
+	// Zwiêksz licznik referencji
     x.data->n++;
+	// Jeœli nie ma referencji do obiektu to usuñ
     if(--data->n == 0) {
         delete data;
     }
-    data=x.data;
+    // Przypisz nowy rctext
+    data = x.data;
     return *this;
 }
 
-rcstring::rcstring(const char* s) {
-    data = new rctext(strlen(s), s);
-}
-
 rcstring& rcstring::operator=(const char* s) {
+	// Jeœli rctext ma tylko jedn¹ referencj¹ to zamieñ string
     if(data->n == 1) {
         data->assign(strlen(s), s);
     }
+    // w przeciwnimy wypadku stwórz nowy rctext i przypisz go do struktury
     else {
         rctext* t = new rctext(strlen(s),s);
         data->n--;
@@ -118,16 +131,19 @@ ostream& operator << (ostream& o, const rcstring& s) {
     return o << s.data->s;
 }
 
+
 rcstring& rcstring::operator+=(const rcstring & s) {
     unsigned int newsize = data->size + s.data->size;
     rctext *newdata = new rctext(newsize, data->s);
     strcat(newdata->s, s.data->s);
+	// Jeœli nie ma referencji to usuñ dane
     if(--data->n == 0) {
         delete data;
     }
     data = newdata;
     return *this;
 }
+
 
 rcstring rcstring::operator+(const rcstring & s) const {
   return rcstring(*this) += s;
@@ -139,20 +155,22 @@ int rcstring::convertToInteger() {
 
 void rcstring::convertToLowercase() {
     int i = 0;
+    rctext* new_text = data->detach();
+    char* new_text_pom = new char[data->n + 1];
     while(data->s[i++]) {
-        data->s[i - 1] = tolower(data->s[i - 1]);
+        *(new_text_pom + i - 1) = tolower(data->s[i - 1]);
     }
+    *(new_text_pom + i) = '\0';
+    new_text->s = new_text_pom;
+    data = new_text;
 }
 
-rcstring rcstring::generateSubstring(int len) {
-    int i;
-    rcstring new_string = "";
-    new_string.data->size = 0;
-    for(i = 0; i < len; i++) {
-        new_string.data->s[i] = data->s[i];
-        new_string.data->size++;
-    }
-    return new_string;
+rcstring rcstring::generateSubstring(unsigned int len) {
+    if (len == data->size) return rcstring(*this);
+    rcstring new_rctring = rcstring(*this);
+	new_rctring.data->detach();
+	new_rctring.data->assign(len, new_rctring.data->s);
+    return new_rctring;
 }
 
 
