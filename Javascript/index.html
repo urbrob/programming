@@ -10,128 +10,100 @@
 </head>
 <body>
 <script src="js/three.min.js"></script>
+<script src="js/Animation.js"></script>
+<script src="js/AnimationHandler.js"></script>
+<script src="js/KeyFrameAnimation.js"></script>
+<script src="js/ColladaLoader.js"></script>
 <script>
-	var WIDTH = window.innerWidth;
-	var HEIGHT = window.innerHeight;
 
-document.addEventListener('keydown',onDocumentKeyDown,false);
-document.addEventListener('keyup',onDocumentKeyUp,false);
-var ROTATOR_X = 0;
-var ROTATOR_Z = 0;
-var STEP = 0.1;
-var SPEED_X = 0;
-var SPEED_Z = 0;
-var MAX_SPEED = 1;
+var model;
+var animations;
+var kfAnimations = [ ];
+var kfAnimationsLength = 0;
+var loader = new THREE.ColladaLoader();
+var lastTimestamp = 0;
+var progress = 0;
+var WIDTH = window.innerWidth;
+var HEIGHT = window.innerHeight;
 
-function speedUp(speed) {
-	return speed < MAX_SPEED ? speed + STEP : speed;
-}
+var renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(WIDTH, HEIGHT);
+renderer.setClearColor(0xDDDDDD, 1);
+document.body.appendChild(renderer.domElement);
 
-function speedDown(speed) {
-	return speed > -MAX_SPEED ? speed - STEP : speed;
-}
+var scene = new THREE.Scene();
 
-function rotateY(rotator_x){
-	if (rotator_x > 0) return 0.05;
-	else if (rotator_x < 0) return -0.05;
-	return 0;
-}
+var camera = new THREE.PerspectiveCamera(50, WIDTH/HEIGHT, 0.1, 10000);
+camera.position.z = 50;
+scene.add(camera);
 
-function calculateSpeed(speed, rotator){
-	if(rotator == 1){
-		speed = speedUp(speed);
-	}
-	else if(rotator == -1){
-		speed = speedDown(speed);
-	}
-	else {
-		speed -= 0.05 * speed;
-		if(Math.abs(speed) < 0.1) speed = 0;
-	}
-	return speed;
-}
+var light = new THREE.PointLight(0xFFFFFF);
+light.position.set(-10, 15, 50);
+scene.add(light);
 
-function onDocumentKeyDown(event){
-	event = event || window.event;
-	var keycode = event.keyCode;
-	switch(keycode){
-		case 37:
-			console.log("left down");
-			ROTATOR_X = -1;
-			break;
-		case 38:
-			console.log("up down");
-			ROTATOR_Z = -1
-			break;
-		case 39:
-			console.log("right down");
-			ROTATOR_X = 1;
-			break;
-		case 40:
-			console.log("down down" );
-			ROTATOR_Z = 1
-			break;
-		}
-	}
-	function onDocumentKeyUp(event){
-		event = event || window.event;
-		var keycode = event.keyCode;
-		switch(keycode){
-			case 37:
-				console.log("left up");
-				ROTATOR_X = 0;
-				break;
-			case 38:
-				console.log("up up");
-				ROTATOR_Z = 0
-				break;
-			case 39:
-				console.log("right up");
-				ROTATOR_X = 0;
-				break;
-			case 40:
-				console.log("down up" );
-				ROTATOR_Z = 0;
-				break;
+
+function start() {
+	for ( var i = 0; i < kfAnimationsLength; ++i ) {
+		var animation = kfAnimations[i];
+		for ( var h = 0, hl = animation.hierarchy.length; h < hl; h++ ) {
+			var keys = animation.data.hierarchy[ h ].keys;
+			var sids = animation.data.hierarchy[ h ].sids;
+			var obj = animation.hierarchy[ h ];
+			if ( keys.length && sids ) {
+				for ( var s = 0; s < sids.length; s++ ) {
+					var sid = sids[ s ];
+					var next = animation.getNextKeyWith( sid, h, 0 );
+					if ( next ) next.apply( sid );
+				}
+				obj.matrixAutoUpdate = false;
+				animation.data.hierarchy[ h ].node.updateMatrix();
+				obj.matrixWorldNeedsUpdate = true;
 			}
 		}
-
-
-
-	var renderer = new THREE.WebGLRenderer({antialias:true});
-	renderer.setSize(WIDTH, HEIGHT);
-	renderer.setClearColor(0xDDDDDD, 1);
-	document.body.appendChild(renderer.domElement);
-
-	var scene = new THREE.Scene();
-
-	var camera = new THREE.PerspectiveCamera(50, WIDTH/HEIGHT, 0.1, 10000);
-	camera.position.z = 50;
-	scene.add(camera);
-
-	var boxGeometry = new THREE.BoxGeometry(10, 10, 10);
-	var phongMaterial = new THREE.MeshPhongMaterial({color: 0xFF0000});
-	var cube = new THREE.Mesh(boxGeometry, phongMaterial);
-	cube.position.x = -25;
-	cube.rotation.set(0.4, 0.2, 0);
-	scene.add(cube);
-
-	var light = new THREE.PointLight(0xFFFFFF);
-	light.position.set(-10, 15, 50);
-	scene.add(light);
-
-	var t = 0;
-	function render() {
-		t += 0.01;
-		requestAnimationFrame(render);
-		SPEED_X = calculateSpeed(SPEED_X, ROTATOR_X)
-		SPEED_Z = calculateSpeed(SPEED_Z, ROTATOR_Z)
-		cube.position.z += SPEED_Z;
-        cube.position.x += SPEED_X;
-		cube.rotation.y += rotateY(SPEED_X);
-		renderer.render(scene, camera);
+		animation.loop = false;
+		animation.play();
 	}
-	render();
+}
+
+
+function render( timestamp ) {
+	var frameTime = ( timestamp - lastTimestamp ) * 0.001;
+	if ( progress >= 0 && progress < 5 ) {
+		for ( var i = 0; i < kfAnimationsLength; ++i ) {
+			kfAnimations[ i ].update( frameTime );
+		}
+	} else if ( progress >= 5 ) {
+		for ( var i = 0; i < kfAnimationsLength; ++i ) {
+			kfAnimations[ i ].stop();
+		}
+		progress = 0;
+		start();
+	}
+	progress += frameTime;
+	lastTimestamp = timestamp;
+	renderer.render( scene, camera );
+	requestAnimationFrame( render );
+}
+
+
+loader.load( 'test2.dae', function ( collada ) {
+	model = collada.scene;
+	animations = collada.animations;
+	kfAnimationsLength = animations.length;
+	for ( var i = 0; i < kfAnimationsLength; ++i ) {
+		var animation = animations[ i ];
+		var kfAnimation = new THREE.KeyFrameAnimation( animation );
+		kfAnimation.timeScale = 1;
+		kfAnimations.push( kfAnimation );
+	}
+  model.position.set(0,0,-3);
+	model.scale.x = model.scale.y = model.scale.z = 1;
+  scene.add( model );
+	start();
+	render( lastTimestamp );
+} );
+
+
 </script>
 </body>
 </html>
