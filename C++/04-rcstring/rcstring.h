@@ -21,6 +21,7 @@ public:
     rcstring& operator+=(const rcstring &);
     rcstring operator+(const rcstring &) const;
     rcstring generateSubstring(unsigned int len);
+	int getNcounter() const;
     void convertToLowercase();
     int convertToInteger();
     friend ostream& operator<<(ostream&, const rcstring&);
@@ -35,7 +36,7 @@ struct rcstring::rctext {
     char* s; // Nasz tekst
     unsigned int size; // Jego d³ugoœæ
     unsigned int n; // Licznik referenci / to ile posiada tekstów
-
+    
 	// Zwyk³y konstruktor tworz¹cy tekst 
     rctext(unsigned int nsize, const char* p) {
         n = 1;
@@ -113,6 +114,7 @@ rcstring& rcstring::operator=(const rcstring & x) {
     return *this;
 }
 
+
 rcstring& rcstring::operator=(const char* s) {
 	// Jeœli rctext ma tylko jedn¹ referencj¹ to zamieñ string
     if(data->n == 1) {
@@ -149,26 +151,26 @@ rcstring rcstring::operator+(const rcstring & s) const {
   return rcstring(*this) += s;
 }
 
+int rcstring::getNcounter() const{
+	return data->n;
+}	
+
 int rcstring::convertToInteger() {
     return atoi(data->s);
 }
 
 void rcstring::convertToLowercase() {
     int i = 0;
-    rctext* new_text = data->detach();
-    char* new_text_pom = new char[data->n + 1];
+    data = data->detach();
     while(data->s[i++]) {
-        *(new_text_pom + i - 1) = tolower(data->s[i - 1]);
+        data->s[i - 1] = tolower(data->s[i - 1]);
     }
-    *(new_text_pom + i) = '\0';
-    new_text->s = new_text_pom;
-    data = new_text;
 }
 
 rcstring rcstring::generateSubstring(unsigned int len) {
     if (len == data->size) return rcstring(*this);
     rcstring new_rctring = rcstring(*this);
-	new_rctring.data->detach();
+	new_rctring.data = new_rctring.data->detach();
 	new_rctring.data->assign(len, new_rctring.data->s);
     return new_rctring;
 }

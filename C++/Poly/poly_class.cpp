@@ -28,23 +28,17 @@ string erase_one(string text){
 }
 
 Poly Poly::operator+(Poly const& poly) const{
-	Poly new_poly;
-	for(map<int, double>::const_iterator it = coefficients.begin(); it != coefficients.end(); ++it){
-		new_poly.coefficients[(*it).first] = (*it).second;
-	}
+	Poly new_poly = *this;
 	for(map<int, double>::const_iterator it = poly.coefficients.begin();it != poly.coefficients.end(); ++it){
 		new_poly.coefficients[(*it).first] += (*it).second;
 		if (new_poly.coefficients.at((*it).first) == 0.0) new_poly.coefficients.erase((*it).first);
 	}
-	
+
 	return new_poly;
 }
 
 Poly Poly::operator-(Poly const& poly) const{
-	Poly new_poly;
-	for(map<int, double>::const_iterator it = coefficients.begin();it != coefficients.end(); ++it){
-		new_poly.coefficients[(*it).first] = (*it).second;
-	}
+	Poly new_poly = *this;
 	for(map<int, double>::const_iterator it = poly.coefficients.begin();it != poly.coefficients.end(); ++it){
 		new_poly.coefficients[(*it).first] -= (*it).second;
 		if (new_poly.coefficients.at((*it).first) == 0) new_poly.coefficients.erase((*it).first);
