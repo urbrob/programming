@@ -71,7 +71,7 @@ node *assocTabInterface::find(const char *key){
     return NULL;
 }
 
-int caseAssocTab::find_pom(const char *key, const char *key2){
+int caseAssocTab::find_pom(const char *key, const char *key){
     return strcmp(key2, key);
 }
 
