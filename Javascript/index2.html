@@ -9,7 +9,11 @@
 	</style>
 </head>
 <body>
+
+<div style="position: fixed; lef:10px; top:10px; z-index:1000; width:200px; font-size: 14px">Score: <span id='score'>0</span></div>
+
 <script src="js/three.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 <script>
 	var WIDTH = window.innerWidth;
 	var HEIGHT = window.innerHeight;
@@ -71,6 +75,23 @@ function onDocumentKeyUp(event){
 	}
 }
 
+function end_game(score){
+	$.ajax({
+	   type: "GET",
+	   dataType: "json",
+	   url: "http://nowa.imsi.pl:5000/player/Dawid",
+   }).done(function( data ) {
+	   if (parseInt(data.p1) < parseInt(score)) {
+		   data.p1 = score;
+		   $.ajax({
+	   	   type: "PUT",
+		   data: data,
+	   	   dataType: "json",
+	   	   url: "http://nowa.imsi.pl:5000/players/" + data.p0,
+	      })
+	  }})
+   }
+
 var renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(WIDTH, HEIGHT);
 renderer.setClearColor(0xDDDDDD, 1);
@@ -98,7 +119,7 @@ scene.add(plane);
 
 ////////////
 var boxGeometry = new THREE.BoxGeometry(10, 10, 10);
-var phongMaterial = new THREE.MeshPhongMaterial({color: 0xff69b4});
+var phongMaterial = new THREE.MeshPhongMaterial({color: 0x0069b4});
 var cube = new THREE.Mesh(boxGeometry, phongMaterial);
 cube.position.x = 0;
 cube.position.y = -10;
@@ -113,13 +134,13 @@ scene.add(light);
 var t = 0;
 var coolDown = 0, speed = 1, side = 0, brake = 0;
 plane.material.map.offset.y = 0;
+var brake = 0;
+var score = 0;
+
 
 function render() {
 	if (coolDown < 0) coolDown = 0;
 	else if (coolDown > 60) coolDown = 60;
-
-	if (brake < 0) brake = 0;
-
 	if (coolDown < 10) speed = 10;
 	else if (coolDown > 40) speed = 40;
 	else speed = coolDown;
@@ -130,31 +151,34 @@ function render() {
 	if (ROTATE_UP == 1){
 		++coolDown;
 		plane.material.map.offset.y -= coolDown / 1000;
+		brake = 0.1;
+		score += speed / 100;
 	}
 	else if (coolDown > 0){
 		--coolDown;
-		plane.material.map.offset.y -= coolDown/2000;
+		plane.material.map.offset.y -= coolDown / 2000;
 	}
 	if (ROTATE_DOWN == 1){
-		++brake;
-		if (plane.material.map.offset.y > 0) plane.material.map.offset.y += brake*10000;
-		else plane.material.map.offset.y += brake/1000000;
-	}
-	if (ROTATE_LEFT == 1){
-		if (camera.position.x > -13.5){
-			camera.position.x -= 0.01 * speed;
-			cube.position.x -= 0.01 * speed;
+		coolDown = coolDown / brake;
+		if (coolDown <= 0 && brake > 0) {
+			plane.material.map.offset.y += brake / 75;
+			brake--;
+		}else {
+			brake += 0.1;
 		}
 	}
-	if (ROTATE_RIGHT == 1){
-		if (camera.position.x < 13.5){
-			camera.position.x += 0.01 * speed;
-			cube.position.x += 0.01 * speed;
-		}
+	if (ROTATE_LEFT == 1 && camera.position.x > -13.5){
+		camera.position.x -= 0.01 * speed;
+		cube.position.x -= 0.01 * speed;
+	}
+	if (ROTATE_RIGHT == 1 && camera.position.x < 13.5){
+		camera.position.x += 0.01 * speed;
+		cube.position.x += 0.01 * speed;
 	}
 	renderer.render(scene, camera);
+	document.getElementById('score').innerHTML = Math.round(score);
+	if (score > 10 && score < 12) end_game();
 }
-
 
 render();
 </script>
