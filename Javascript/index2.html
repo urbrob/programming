@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>z 1</title>
+	<style>
+		body { margin: 0; padding: 0; font-size: 0; }
+		canvas { width: 100%; height: 100%; }
+	</style>
+</head>
+<body>
+<script src="js/three.min.js"></script>
+<script>
+	var WIDTH = window.innerWidth;
+	var HEIGHT = window.innerHeight;
+	var ROTATE_UP = 0;
+	var ROTATE_DOWN = 0;
+	var ROTATE_LEFT = 0;
+	var ROTATE_RIGHT = 0;
+
+document.addEventListener('keydown',onDocumentKeyDown,false);
+document.addEventListener('keyup',onDocumentKeyUp,false);
+
+var clock = new THREE.Clock;
+dt = clock.getDelta();
+
+function onDocumentKeyDown(event){
+	event = event || window.event;
+	var keycode = event.keyCode;
+	switch(keycode){
+		case 37 :
+			console.log("left down");
+			ROTATE_LEFT = 1;
+			break;
+		case 38 :
+			console.log("up down");
+			ROTATE_UP = 1
+			break;
+		case 39 :
+			console.log("right down");
+			ROTATE_RIGHT = 1;
+			break;
+		case 40 :
+			console.log("down down" );
+			ROTATE_DOWN = 1;
+			break;
+	}
+}
+
+
+function onDocumentKeyUp(event){
+	event = event || window.event;
+	var keycode = event.keyCode;
+	switch(keycode){
+		case 37 :
+			console.log("left up" );
+			ROTATE_LEFT = 0;
+			break;
+		case 38 :
+			console.log("up up"   );
+			ROTATE_UP = 0;
+			break;
+		case 39 :
+			console.log("right up"   );
+			ROTATE_RIGHT = 0;
+			break;
+		case 40 :
+			console.log("down up" );
+			ROTATE_DOWN = 0;
+			break;
+	}
+}
+
+var renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(WIDTH, HEIGHT);
+renderer.setClearColor(0xDDDDDD, 1);
+document.body.appendChild(renderer.domElement);
+
+var scene = new THREE.Scene();
+
+var camera = new THREE.PerspectiveCamera(40, WIDTH/HEIGHT, 10, 100);
+camera.position.z = 30;
+scene.add(camera);
+
+/////////////
+
+var Texture = new THREE.TextureLoader().load("road1.jpg");
+Texture.wrapS = THREE.RepeatWrapping;
+Texture.wrapT = THREE.RepeatWrapping;
+Texture.repeat.set( 1, 10 );
+
+var Material = new THREE.MeshBasicMaterial( { map: Texture, side: THREE.DoubleSide } );
+var Geometry = new THREE.PlaneGeometry(40, 250, 1, 1);
+var plane = new THREE.Mesh(Geometry, Material);
+plane.rotation.set(90, 0, 0);
+scene.add(plane);
+
+
+////////////
+var boxGeometry = new THREE.BoxGeometry(10, 10, 10);
+var phongMaterial = new THREE.MeshPhongMaterial({color: 0xff69b4});
+var cube = new THREE.Mesh(boxGeometry, phongMaterial);
+cube.position.x = 0;
+cube.position.y = -10;
+cube.position.z = 10;
+cube.rotation.set(0, 0, 0);
+scene.add(cube);
+
+var light = new THREE.PointLight(0xFFFFFF);
+light.position.set(-10, 15, 50);
+scene.add(light);
+
+var t = 0;
+var coolDown = 0, speed = 1, side = 0, brake = 0;
+plane.material.map.offset.y = 0;
+
+function render() {
+	if (coolDown < 0) coolDown = 0;
+	else if (coolDown > 60) coolDown = 60;
+
+	if (brake < 0) brake = 0;
+
+	if (coolDown < 10) speed = 10;
+	else if (coolDown > 40) speed = 40;
+	else speed = coolDown;
+
+	t += 0.01;
+
+	requestAnimationFrame(render);
+	if (ROTATE_UP == 1){
+		++coolDown;
+		plane.material.map.offset.y -= coolDown / 1000;
+	}
+	else if (coolDown > 0){
+		--coolDown;
+		plane.material.map.offset.y -= coolDown/2000;
+	}
+	if (ROTATE_DOWN == 1){
+		++brake;
+		if (plane.material.map.offset.y > 0) plane.material.map.offset.y += brake*10000;
+		else plane.material.map.offset.y += brake/1000000;
+	}
+	if (ROTATE_LEFT == 1){
+		if (camera.position.x > -13.5){
+			camera.position.x -= 0.01 * speed;
+			cube.position.x -= 0.01 * speed;
+		}
+	}
+	if (ROTATE_RIGHT == 1){
+		if (camera.position.x < 13.5){
+			camera.position.x += 0.01 * speed;
+			cube.position.x += 0.01 * speed;
+		}
+	}
+	renderer.render(scene, camera);
+}
+
+
+render();
+</script>
+</body>
+</html>
