@@ -135,7 +135,6 @@ function end_game(user){
 }
 
 function reset_ring(ring){
-	console.log(ring.position)
 	if(ring.position.y < -15) {
 		x_positions = [-10, 0, 10];
 		ring.position.x = x_positions[Math.floor(Math.random() * 3)];
@@ -195,7 +194,7 @@ var BASE_OFFSET = 40;
 var geometry = new THREE.RingGeometry( 1, 3, 32 );
 var material = new THREE.MeshBasicMaterial( { color: 0xffff00, side: THREE.DoubleSide } );
 var ring = new THREE.Mesh( geometry, material );
-ring.position.x = 13;
+ring.position.x = 0;
 ring.position.y = cube.position.y + BASE_OFFSET;
 ring.position.z = cube.position.z - BASE_OFFSET * 1.60;
 ring.rotation.set(0, 0, 0);
