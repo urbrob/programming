@@ -8,9 +8,57 @@
 		canvas { width: 100%; height: 100%; }
 	</style>
 </head>
-<body>
+<script>
 
-<div style="position: fixed; lef:10px; top:10px; z-index:1000; width:200px; font-size: 14px">Score: <span id='score'>0</span></div>
+	function update_user(user_id, username, points){
+		data = {'p1': points.toString(), 'id': user_id, 'p0': username};
+		$.ajax({
+			 type: "PUT",
+			 dataType: "json",
+			 contentType: "application/json; charset=utf-8",
+			 data: JSON.stringify(data),
+			 url: "http://nowa.imsi.pl:5000/players/" + user_id,
+		 })
+	}
+
+	// Wczytanie od użytkownika nicku i dodanie go do bazy
+	function start_game(){
+		var user = prompt('Podaj nick:');
+		if(user == '') user = 'Janusz';
+		data = {"name": user}
+		document.getElementById('user').innerHTML = user;
+
+		// Spróbujmy Dodać nowego gracza
+		$.ajax({
+			 type: "PUT",
+			 dataType: "json",
+			 contentType: "application/json; charset=utf-8",
+			 data: JSON.stringify(data),
+			 url: "http://nowa.imsi.pl:5000/players",
+		 }).done(function(data){
+			 // Jeśli go nie dodało to znaczy, że jest bazie i trzeba pobrać jego dane-
+			 if (data.id == 0){
+					 $.ajax({
+			 			 type: "GET",
+			 			 dataType: "json",
+			 			 contentType: "application/json; charset=utf-8",
+			 			 url: "http://nowa.imsi.pl:5000/players/" + user,
+			 		 }).done(function(data){
+							 data = data[0];
+				 			 document.getElementById('high-score').innerHTML = data.p1;
+							 document.getElementById('user-id').innerHTML = data.id;
+						 })
+			 } else { // Jeśli udało się dodać to ustawiamy ID i zostawiamy high-score na 0
+				 document.getElementById('user-id').innerHTML = data.id;
+				 update_user(data.id, user, 0);
+			 }
+
+		 })}
+</script>
+<body onload='start_game()'>
+<div style="position: fixed; left:10px; top:10px; z-index:1000; width:200px; font-size: 14px">User: <span id='user'></span> - <span id='user-id'></span></div>
+<div style="position: fixed; left:10px; top:25px; z-index:1000; width:200px; font-size: 14px">Score: <span id='score'>0</span></div>
+<div style="position: fixed; left:10px; top:40px; z-index:1000; width:200px; font-size: 14px">High-Score: <span id='high-score'>0</span></div>
 
 <script src="js/three.min.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
@@ -75,23 +123,38 @@ function onDocumentKeyUp(event){
 	}
 }
 
-function end_game(score){
-	$.ajax({
-	   type: "GET",
-	   dataType: "json",
-	   url: "http://nowa.imsi.pl:5000/player/Dawid",
-   }).done(function( data ) {
-	   if (parseInt(data.p1) < parseInt(score)) {
-		   data.p1 = score;
-		   $.ajax({
-	   	   type: "PUT",
-		   data: data,
-	   	   dataType: "json",
-	   	   url: "http://nowa.imsi.pl:5000/players/" + data.p0,
-	      })
-	  }})
-   }
+function end_game(user){
+	// Sprawdź czy mamy użytkownika w bazie i sprawdźmy czy pobił rekord
+	score = parseInt(document.getElementById('score').innerHTML);
+	high_score = parseInt(document.getElementById('high-score').innerHTML);
+	user = document.getElementById('user').innerHTML;
+	user_id = document.getElementById('user-id').innerHTML;
+	if(score > high_score) update_user(user_id, user, score);
+	alert('Koniec gry ! Twój wynik to: ' + score);
+	location.reload();
+}
 
+function reset_ring(ring){
+	if(ring.position.y < -15) {
+		x_positions = [-10, 0, 10];
+		ring.position.x = x_positions[Math.floor(Math.random() * 3)];
+		ring.position.y = cube.position.y + BASE_OFFSET;
+		ring.position.z = cube.position.z - BASE_OFFSET * 1.60;
+	}
+}
+
+function difference_not_bigger_than(x, y, diff){
+	return Math.abs(x - y) < diff;
+}
+
+function clash_with_ring(ring, cube){
+	if(difference_not_bigger_than(ring.position.x, cube.position.x, 8) && difference_not_bigger_than(ring.position.z, cube.position.z, 0.1)) {
+		return true;
+	}
+	return false;
+}
+
+//Przygotowanie kamery i środowikska
 var renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(WIDTH, HEIGHT);
 renderer.setClearColor(0xDDDDDD, 1);
@@ -99,17 +162,16 @@ document.body.appendChild(renderer.domElement);
 
 var scene = new THREE.Scene();
 
-var camera = new THREE.PerspectiveCamera(40, WIDTH/HEIGHT, 10, 100);
-camera.position.z = 30;
+var camera = new THREE.PerspectiveCamera(40, WIDTH/HEIGHT, 10, 150);
+camera.position.z = 42;
 scene.add(camera);
 
-/////////////
+// Przygotowanie drogi
 
 var Texture = new THREE.TextureLoader().load("road1.jpg");
 Texture.wrapS = THREE.RepeatWrapping;
 Texture.wrapT = THREE.RepeatWrapping;
 Texture.repeat.set( 1, 10 );
-
 var Material = new THREE.MeshBasicMaterial( { map: Texture, side: THREE.DoubleSide } );
 var Geometry = new THREE.PlaneGeometry(40, 250, 1, 1);
 var plane = new THREE.Mesh(Geometry, Material);
@@ -117,7 +179,7 @@ plane.rotation.set(90, 0, 0);
 scene.add(plane);
 
 
-////////////
+// Przygotowanie KLOCA
 var boxGeometry = new THREE.BoxGeometry(10, 10, 10);
 var phongMaterial = new THREE.MeshPhongMaterial({color: 0x0069b4});
 var cube = new THREE.Mesh(boxGeometry, phongMaterial);
@@ -127,6 +189,19 @@ cube.position.z = 10;
 cube.rotation.set(0, 0, 0);
 scene.add(cube);
 
+// Przygotowanie obiektu kolizji
+var BASE_OFFSET = 40;
+var geometry = new THREE.RingGeometry( 1, 3, 32 );
+var material = new THREE.MeshBasicMaterial( { color: 0xffff00, side: THREE.DoubleSide } );
+var ring = new THREE.Mesh( geometry, material );
+ring.position.x = 0;
+ring.position.y = cube.position.y + BASE_OFFSET;
+ring.position.z = cube.position.z - BASE_OFFSET * 1.60;
+ring.rotation.set(0, 0, 0);
+scene.add(ring);
+
+
+// Przygotowanie oświetlenia
 var light = new THREE.PointLight(0xFFFFFF);
 light.position.set(-10, 15, 50);
 scene.add(light);
@@ -145,23 +220,31 @@ function render() {
 	else if (coolDown > 40) speed = 40;
 	else speed = coolDown;
 
+	lvl = 3 + t / 1000;
+
 	t += 0.01;
 
 	requestAnimationFrame(render);
 	if (ROTATE_UP == 1){
 		++coolDown;
 		plane.material.map.offset.y -= coolDown / 1000;
+		ring.position.z += coolDown * lvl / 1000;
+		ring.position.y -= coolDown * lvl / 2000;
 		brake = 0.1;
 		score += speed / 100;
 	}
 	else if (coolDown > 0){
 		--coolDown;
 		plane.material.map.offset.y -= coolDown / 2000;
+		ring.position.z += coolDown * lvl / 2000;
+		ring.position.y -= coolDown * lvl / 2000;
 	}
 	if (ROTATE_DOWN == 1){
 		coolDown = coolDown / brake;
 		if (coolDown <= 0 && brake > 0) {
 			plane.material.map.offset.y += brake / 75;
+			ring.position.z -= brake * lvl / 75;
+			ring.position.y += brake * lvl / 75;
 			brake--;
 		}else {
 			brake += 0.1;
@@ -176,8 +259,12 @@ function render() {
 		cube.position.x += 0.01 * speed;
 	}
 	renderer.render(scene, camera);
+	// Liczenie punktów
 	document.getElementById('score').innerHTML = Math.round(score);
-	if (score > 10 && score < 12) end_game();
+
+	// Warunek zakończenia gry
+	if (clash_with_ring(ring, cube)) end_game();
+	reset_ring(ring);
 }
 
 render();
