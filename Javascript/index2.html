@@ -131,6 +131,28 @@ function end_game(user){
 	user_id = document.getElementById('user-id').innerHTML;
 	if(score > high_score) update_user(user_id, user, score);
 	alert('Koniec gry ! Twój wynik to: ' + score);
+	location.reload();
+}
+
+function reset_ring(ring){
+	console.log(ring.position)
+	if(ring.position.y < -15) {
+		x_positions = [-10, 0, 10];
+		ring.position.x = x_positions[Math.floor(Math.random() * 3)];
+		ring.position.y = cube.position.y + BASE_OFFSET;
+		ring.position.z = cube.position.z - BASE_OFFSET * 1.60;
+	}
+}
+
+function difference_not_bigger_than(x, y, diff){
+	return Math.abs(x - y) < diff;
+}
+
+function clash_with_ring(ring, cube){
+	if(difference_not_bigger_than(ring.position.x, cube.position.x, 8) && difference_not_bigger_than(ring.position.z, cube.position.z, 0.1)) {
+		return true;
+	}
+	return false;
 }
 
 //Przygotowanie kamery i środowikska
@@ -141,8 +163,8 @@ document.body.appendChild(renderer.domElement);
 
 var scene = new THREE.Scene();
 
-var camera = new THREE.PerspectiveCamera(40, WIDTH/HEIGHT, 10, 100);
-camera.position.z = 30;
+var camera = new THREE.PerspectiveCamera(40, WIDTH/HEIGHT, 10, 150);
+camera.position.z = 42;
 scene.add(camera);
 
 // Przygotowanie drogi
@@ -168,6 +190,18 @@ cube.position.z = 10;
 cube.rotation.set(0, 0, 0);
 scene.add(cube);
 
+// Przygotowanie obiektu kolizji
+var BASE_OFFSET = 40;
+var geometry = new THREE.RingGeometry( 1, 3, 32 );
+var material = new THREE.MeshBasicMaterial( { color: 0xffff00, side: THREE.DoubleSide } );
+var ring = new THREE.Mesh( geometry, material );
+ring.position.x = 13;
+ring.position.y = cube.position.y + BASE_OFFSET;
+ring.position.z = cube.position.z - BASE_OFFSET * 1.60;
+ring.rotation.set(0, 0, 0);
+scene.add(ring);
+
+
 // Przygotowanie oświetlenia
 var light = new THREE.PointLight(0xFFFFFF);
 light.position.set(-10, 15, 50);
@@ -187,23 +221,31 @@ function render() {
 	else if (coolDown > 40) speed = 40;
 	else speed = coolDown;
 
+	lvl = 3 + t / 1000;
+
 	t += 0.01;
 
 	requestAnimationFrame(render);
 	if (ROTATE_UP == 1){
 		++coolDown;
 		plane.material.map.offset.y -= coolDown / 1000;
+		ring.position.z += coolDown * lvl / 1000;
+		ring.position.y -= coolDown * lvl / 2000;
 		brake = 0.1;
 		score += speed / 100;
 	}
 	else if (coolDown > 0){
 		--coolDown;
 		plane.material.map.offset.y -= coolDown / 2000;
+		ring.position.z += coolDown * lvl / 2000;
+		ring.position.y -= coolDown * lvl / 2000;
 	}
 	if (ROTATE_DOWN == 1){
 		coolDown = coolDown / brake;
 		if (coolDown <= 0 && brake > 0) {
 			plane.material.map.offset.y += brake / 75;
+			ring.position.z -= brake * lvl / 75;
+			ring.position.y += brake * lvl / 75;
 			brake--;
 		}else {
 			brake += 0.1;
@@ -218,12 +260,12 @@ function render() {
 		cube.position.x += 0.01 * speed;
 	}
 	renderer.render(scene, camera);
-
 	// Liczenie punktów
 	document.getElementById('score').innerHTML = Math.round(score);
 
 	// Warunek zakończenia gry
-	if (score > 10 && score < 12) end_game();
+	if (clash_with_ring(ring, cube)) end_game();
+	reset_ring(ring);
 }
 
 render();
