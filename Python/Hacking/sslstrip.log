@@ -1,0 +1,2 @@
+2019-01-01 20:09:25,472 SECURE POST Data (t.av.st):
+{"domain":"www.avg.com","pageId":"homepage","locale":"N/A","browser":{"name":"Chrome","ver":"71.0.3578.98","lang":"en-us"},"trackHit":true,"performance":{"unloadTime":0,"redirectTime":149,"domainLookupTime":0,"connectTime":0,"requestTime":122,"responseTime":175,"dom":{"interactiveTime":2964,"loadEventStartTime":0,"contentLoadedEventTime":150,"resourceLodedTime":3037},"domTime":6151,"loadEventTime":44,"fullTime":6482}}

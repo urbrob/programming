@@ -12,13 +12,10 @@ class Sniffer():
 
     def _get_login_info_from_http(self, packet, verbose=True):
         if packet.haslayer(Raw):
-            load = packet[Raw].load.encode()
-            if verbose:
-                print("[+] Possible pass data: " + load)
+            load = packet[Raw].load
             return load
 
     def process_sniffed_packet(self, packet):
-        import pdb; pdb.set_trace()
         if packet.haslayer(http.HTTPRequest):
             url = self._get_url_from_packet(packet)
             print('[+] HTTP REQUEST AT: ' + url)

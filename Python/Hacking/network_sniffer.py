@@ -9,6 +9,11 @@ from subprocess import Popen, PIPE
 import asyncio
 
 
+# Its the program that helps you spoof your network
+# use it `python3 network_sniffer -i eth0`
+# Remember to add 1 to your /proc/sys/net/ipv4/ip_forward
+
+
 def get_my_ip(interface):
     ip_regex = r'inet \d+.\d+.\d+.\d+'
     try:
