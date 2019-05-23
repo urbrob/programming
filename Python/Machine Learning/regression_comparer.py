@@ -1,4 +1,3 @@
-
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.svm import SVR
@@ -17,21 +16,29 @@ class RegressionComparer:
             'Linear/Multilinear': self.linear_regression,
             'Polynomial': self.polynomial_regression,
             'Support vector regression': self.svr_regression,
-            #'Tree': DecisionTreeRegressor,
-            #'Forest': RandomForestRegressor
+            'Tree': self.tree_regression,
+            'Forest': self.random_forest,
         }
 
-    def _compare_values(self, value, compartor):
-        value = abs(value)
-        compartor = abs(compartor)
-        return value / compartor if value < compartor else compartor / value
 
     def compare_prediction(self, predicted_values):
-        values = [self._compare_values(predicted_value, value) for predicted_value, value in zip(predicted_values, self.y_test)]
-        return sum(values) / len(values)
+        matrix = confusion_matrix(self.y_test, predicted_values)
 
     def linear_regression(self):
         regressor = LinearRegression()
+        regressor.fit(self.x_train, self.y_train)
+        predict = regressor.predict(self.x_test)
+        return self.compare_prediction(predict)
+
+    def random_forest(self):
+        regressor = RandomForestRegressor(n_estimators=100)
+        regressor.fit(x, y)
+        predict = regressor.predict(self.x_test)
+        return self.compare_prediction(predict)
+
+
+    def tree_regression(self):
+        regressor = DecisonTreeRegression()
         regressor.fit(self.x_train, self.y_train)
         predict = regressor.predict(self.x_test)
         return self.compare_prediction(predict)
@@ -51,7 +58,6 @@ class RegressionComparer:
         y_svr = self.y_scaller.inverse_transform(svr_reggressor.predict(self.x_scaller.transform(self.x_test_sc)))
         return self.compare_prediction(y_svr)
 
-
     def load_data(self, x, y):
         self.x_scaller = StandardScaler()
         self.y_scaller = StandardScaler()
@@ -62,7 +68,7 @@ class RegressionComparer:
         self.y_scalled = self.y_scaller.fit_transform(y)
         self.regression_results = {}
         self.x_train, self.x_test, self.y_train, self.y_test = train_test_split(self.x, self.y, test_size = 1/3)
-        self.x_train_sc, self.x_test_sc, self.y_train_sc, self.y_test_sc = train_test_split(self.x_scalled, self.y_scalled, test_size = 1/3, random_state=0)
+
 
     def fit_for_all(self):
         print('\nIT REGRESSION COMPARATOR 0.1.0v\n\n')
@@ -76,15 +82,3 @@ class RegressionComparer:
         print('\nResults:\n')
         for regression_name, result in self.regression_results.items():
             print(regression_name, result)
-
-
-
-
-if __name__ == '__main__':
-    dataset = pd.read_csv('50_Startups.csv')
-    x = dataset.iloc[:, :-1].values
-    y = dataset.iloc[:, -1:].values
-    regresion_comparer = RegressionComparer()
-    regresion_comparer.load_data(x, y)
-    regresion_comparer.fit_for_all()
-    regresion_comparer.summary_reggression()
